@@ -16,6 +16,9 @@
  
  Pin 10: Onewire temp sensor
  
+ Pin 11: Switch connected to ground
+ Pin 12: Switch connected to ground
+ 
  */
 
 #define MOSIpin 7
@@ -40,6 +43,9 @@ byte sensAddr[8];
 void setup() {
   pinMode(coolpin, OUTPUT);
   pinMode(heatpin, OUTPUT);
+  
+  pinMode(11, INPUT_PULLUP);
+  pinMode(12, INPUT_PULLUP);
 
   Serial.begin(9600);
 
@@ -51,14 +57,13 @@ void setup() {
 
 void loop() {
   static float currtemp = 9001;
-  static float targettemp = 9001;
+  static float targettemp = 14;
 
   initTempReading();
 
   drawloop(currtemp, targettemp);
   
-
-  delay(1000); // Temp reading takes 750ms to finish, should probably do something useful here
+  targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
 
   currtemp = readTemp();
   
@@ -158,7 +163,24 @@ void draw(float currtemp, float targettemp) {
 }
 
 
-
+float watchInputsFor(int x, float targettemp) {
+  unsigned long starttime = millis();
+  
+  while (starttime + x > millis()) {
+    if (digitalRead(11) == HIGH) {
+      targettemp = targettemp + 1;
+      delay(200);
+      return targettemp;
+    }
+    if (digitalRead(12) == HIGH) {
+      targettemp = targettemp - 1;
+      delay(200);
+      return targettemp;
+    }
+  }
+  return targettemp;
+}
+  
 
 
 
