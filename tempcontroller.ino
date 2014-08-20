@@ -221,28 +221,28 @@ void regulateRelays(float currtemp, float targettemp) {
 
   if (currtemp > targettemp + tolerancestop) { // Stop heater
     digitalWrite(heatpin, LOW);
-    curraction = "Idle";
   }  
 
   if (currtemp < targettemp - tolerancestop) {  // Stop compressor
     digitalWrite(coolpin, LOW);
-    curraction = "Idle";
   }
 
   if (currtemp < targettemp - tolerancestart) {  //Start heater
     digitalWrite(heatpin, HIGH);
-    curraction = "Heating";
   }
 
   if (currtemp > targettemp + tolerancestart) {  // Start compressor
     digitalWrite(coolpin, HIGH);
-    curraction = "Cooling";
   }
 
 
   if (digitalRead(heatpin) == HIGH && digitalRead(coolpin) == HIGH) { // This should never happen, panic
     panic("Both relays active");
   }
+  
+  if (digitalRead(coolpin) == HIGH) { curraction = "Cooling"; }
+  if (digitalRead(heatpin) == HIGH) { curraction = "Heating"; }  
+  if (digitalRead(coolpin) == LOW && digitalRead(heatpin) == LOW) { curraction = "Idle"; }
 }
 
 
