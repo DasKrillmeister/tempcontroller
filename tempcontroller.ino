@@ -78,7 +78,7 @@ void loop() {
   Serial.println(" ");  
   Serial.print("Current temperature: ");
   Serial.print(currtemp);
-  Serial.print("\xf8C");
+  Serial.print(" C\xf8");
 
 
 
@@ -154,12 +154,12 @@ void draw(float currtemp, float targettemp) {
   u8g.setPrintPos(5, 10);
   u8g.print("Current temp: ");
   u8g.print(currtemp);
-  u8g.print("\xf8C");
+  u8g.print("C");
 
   u8g.setPrintPos(5, 20);  
   u8g.print("Target temp: ");
   u8g.print(targettemp);
-  u8g.print("\xf8C");
+  u8g.print("C");
 }
 
 
