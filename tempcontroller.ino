@@ -77,7 +77,7 @@ void loop() {
   Serial.println(" ");  
   Serial.print("Current temperature: ");
   Serial.print(currtemp);
-  Serial.print("C");
+  Serial.print(" C\xf8");
 
 
 
