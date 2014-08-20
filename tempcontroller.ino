@@ -43,7 +43,7 @@ OneWire onewire(10); // 4.7K pullup on pin
 
 int i;
 byte sensAddr[8];
-String curraction = "idle";
+String curraction = "Idle";
 
 void setup() {
   pinMode(coolpin, OUTPUT);
@@ -221,12 +221,12 @@ void regulateRelays(float currtemp, float targettemp) {
 
   if (currtemp > targettemp + tolerancestop) { // Stop heater
     digitalWrite(heatpin, LOW);
-    curraction = "idle";
+    curraction = "Idle";
   }  
 
   if (currtemp < targettemp - tolerancestop) {  // Stop compressor
     digitalWrite(coolpin, LOW);
-    curraction = "idle";
+    curraction = "Idle";
   }
 
   if (currtemp < targettemp - tolerancestart) {  //Start heater
