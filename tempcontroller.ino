@@ -22,39 +22,54 @@ void setup() {
   // Find sensor and select
   onewire.search(sensAddr);
   onewire.select(sensAddr);
-
-  // Upload sensor address to serial, ex 28 FF BA 6E 15 14 0 97
-  /*
-   for ( i = 0 ; i<8; i++) {
-   Serial.print(sensAddr[i], HEX);
-   Serial.print(" ");
-   }
-   */
 }
 
 
 void loop() {
-  byte onewireIncData[8];
+  float currtemp;
 
+  initTempReading();
+
+  delay(1000); // Temp reading takes 750ms to finish, should probably do something useful here
+
+  currtemp = readTemp();
+  
+  Serial.println(" ");  
+  Serial.print("Current temperature: ");
+  Serial.print(currtemp);
+  Serial.print("C");
+
+}
+
+
+void panic(String x) {
+  Serial.println(" ");
+  Serial.println("Something went horribly wrong, halting program. Reason: ");
+  Serial.print(x);
+  while (1) {}
+}
+
+// Sends command to initialize a reading
+void initTempReading() {
   onewire.reset();
   onewire.select(sensAddr);
   onewire.write(0x44); // init temp reading
+}
 
-  delay(1000); // Temp reading takes a while to finish, should probably do something useful here
 
+// Reads the sensor scratchpad and returns temperature in celsius.
+float readTemp() {
+  byte onewireIncData[8];
   onewire.reset();
   onewire.select(sensAddr);
   onewire.write(0xBE); //command to read memory
 
-
   for (i=0; i<9; i++) {
     onewireIncData[i] = onewire.read();
-    //    Serial.print(onewireIncData[i], HEX);
-    //    Serial.print(" ");
   }  
 
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
-    Serial.println("CRC Mismatch, insert panic");
+    panic("CRC Mismatch");
   }
 
   byte tempbyte[2];
@@ -75,13 +90,6 @@ void loop() {
   
   if (isNegative) { currtemp = currtemp *-1; }
   
-  Serial.println(" ");  
-  Serial.print("Current temperature: ");
-  Serial.print(currtemp);
-  Serial.print("C");
-
-
+  return currtemp;
 }
-
-
 
