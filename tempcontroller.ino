@@ -1,5 +1,10 @@
 /*
-
+ 
+ todo:
+ save target temp to eeprom
+ ethernet?
+ heat/cooling regulation
+ signed int instead of unsigned in data parse
  
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
@@ -43,7 +48,7 @@ byte sensAddr[8];
 void setup() {
   pinMode(coolpin, OUTPUT);
   pinMode(heatpin, OUTPUT);
-  
+
   pinMode(11, INPUT_PULLUP);
   pinMode(12, INPUT_PULLUP);
 
@@ -62,11 +67,11 @@ void loop() {
   initTempReading();
 
   drawloop(currtemp, targettemp);
-  
+
   targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
 
   currtemp = readTemp();
-  
+
 
 
   Serial.println(" ");  
@@ -86,6 +91,9 @@ void panic(String x) {
   Serial.println(" ");
   Serial.println("Something went horribly wrong, halting program. Reason: ");
   Serial.print(x);
+  // Turn off both relays
+  digitalWrite(2, LOW);
+  digitalWrite(3, LOW);
   while (1) {
   }
 }
@@ -141,21 +149,22 @@ void drawloop(float currtemp, float targettemp) {
   u8g.firstPage();  
   do {
     draw(currtemp, targettemp);
-  } while( u8g.nextPage() );
+  } 
+  while( u8g.nextPage() );
 }
-  
+
 
 // All draw commands go in here
 void draw(float currtemp, float targettemp) {
   int strwidth[2];
 
   u8g.setFont(u8g_font_helvR08);
-  
+
   u8g.setPrintPos(5, 10);
   u8g.print("Current temp: ");
   u8g.print(currtemp);
   u8g.print("C");
-  
+
   u8g.setPrintPos(5, 20);  
   u8g.print("Target temp: ");
   u8g.print(targettemp);
@@ -165,7 +174,7 @@ void draw(float currtemp, float targettemp) {
 
 float watchInputsFor(int x, float targettemp) {
   unsigned long starttime = millis();
-  
+
   while (starttime + x > millis()) {
     if (digitalRead(11) == HIGH) {
       targettemp = targettemp + 1;
@@ -180,7 +189,8 @@ float watchInputsFor(int x, float targettemp) {
   }
   return targettemp;
 }
-  
+
+
 
 
 
