@@ -125,21 +125,11 @@ float readTemp() {
   tempbyte[0] = onewireIncData[1];  // Having the least significant bit first confuses and enrages me
   tempbyte[1] = onewireIncData[0];
 
-  boolean isNegative;
-  isNegative = bitRead(tempbyte[0],7); // Bit 4-8 of the most significant byte are all sign bits indicating a negative number
-
-  tempbyte[0] = tempbyte[0] << 5;
-  tempbyte[0] = tempbyte[0] >> 5; // To get rid of the signing bits
-
-  unsigned int tempraw;
+  int tempraw;
   tempraw = tempbyte[1] | tempbyte[0] << 8;
 
   float currtemp;
   currtemp = tempraw * 0.0625;
-
-  if (isNegative) { 
-    currtemp = currtemp *-1; 
-  }
 
   return currtemp;
 }
