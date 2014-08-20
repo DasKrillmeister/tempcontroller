@@ -1,10 +1,8 @@
 /*
  
  todo:
- save target temp to eeprom
  ethernet?
  heat/cooling regulation
- signed int instead of unsigned in data parse
  
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
@@ -62,10 +60,10 @@ void setup() {
 
 
 void loop() {
-  static float currtemp = 9001;
   static float targettemp;
   
   targettemp = readeepromonce(targettemp);
+  static float currtemp = targettemp;
   
   initTempReading();
 
@@ -171,7 +169,7 @@ float watchInputsFor(int x, float targettemp) {
   while (starttime + x > millis()) {
     if (digitalRead(11) == HIGH) {
       targettemp = targettemp + 1;
-      delay(200);
+      delay(150);
       if (targettemp > 40) {
         targettemp = 40;
       }
@@ -180,7 +178,7 @@ float watchInputsFor(int x, float targettemp) {
     }
     if (digitalRead(12) == HIGH) {
       targettemp = targettemp - 1;
-      delay(200);
+      delay(150);
       if (targettemp < -30) {
         targettemp = -30;
       }
@@ -196,7 +194,7 @@ float readeepromonce(float currtarget) {
   if (read > 0) {
     return currtarget;
   }
-  byte data;
+  char data;
   data = EEPROM.read(0);
   float retval;
   retval = float(data);
@@ -205,9 +203,9 @@ float readeepromonce(float currtarget) {
 }
 
 void writeeeprom(float floattemp) {
-  byte bytetemp;
-  bytetemp = byte(floattemp);
-  EEPROM.write(0, bytetemp);
+  char chartemp;
+  chartemp = char(floattemp);
+  EEPROM.write(0, chartemp);
 }
 
 
