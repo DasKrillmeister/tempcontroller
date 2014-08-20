@@ -35,6 +35,7 @@
 
 #include <OneWire.h>
 #include <U8glib.h>
+#include <EEPROM.h>
 
 
 U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin, 8);
