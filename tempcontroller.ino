@@ -43,6 +43,7 @@ OneWire onewire(10); // 4.7K pullup on pin
 
 int i;
 byte sensAddr[8];
+String curraction = "idle";
 
 void setup() {
   pinMode(coolpin, OUTPUT);
@@ -61,10 +62,9 @@ void setup() {
 
 void loop() {
   static float targettemp;
-  
   targettemp = readeepromonce(targettemp);
   static float currtemp = targettemp;
-  
+
   initTempReading();
 
   drawloop(currtemp, targettemp);
@@ -73,28 +73,30 @@ void loop() {
 
   currtemp = readTemp();
 
-
-
-  Serial.println(" ");  
-  Serial.print("Current temperature: ");
-  Serial.print(currtemp);
-  Serial.print("C");
-
-
+  regulateRelays(currtemp, targettemp);
 
 }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
+// Called in case of critical error, stops program and shuts down relays
 void panic(String x) {
-  Serial.println(" ");
-  Serial.println("Something went horribly wrong, halting program. Reason: ");
-  Serial.print(x);
+
   // Turn off both relays
-  digitalWrite(2, LOW);
-  digitalWrite(3, LOW);
+  digitalWrite(coolpin, LOW);
+  digitalWrite(heatpin, LOW);
+  
+  u8g.firstPage();  
+  do {
+    u8g.setFont(u8g_font_helvR08);
+    u8g.setPrintPos(5, 10);
+    u8g.print("PANIC, Reason:");
+    u8g.setPrintPos(5, 25);
+    u8g.print(x);    
+  } 
+  while( u8g.nextPage() );
+  
   while (1) {
   }
 }
@@ -160,6 +162,10 @@ void draw(float currtemp, float targettemp) {
   u8g.print("Target temp: ");
   u8g.print(targettemp);
   u8g.print("C");
+  
+  u8g.setPrintPos(5, 30);
+  u8g.print("Current action: ");
+  u8g.print(curraction);
 }
 
 
@@ -207,5 +213,43 @@ void writeeeprom(float floattemp) {
   chartemp = char(floattemp);
   EEPROM.write(0, chartemp);
 }
+
+
+void regulateRelays(float currtemp, float targettemp) {
+  float tolerancestop = 0.4;
+  float tolerancestart = 0.7;
+
+  if (currtemp > targettemp + tolerancestop) { // Stop heater
+    digitalWrite(heatpin, LOW);
+    curraction = "idle";
+  }  
+
+  if (currtemp < targettemp - tolerancestop) {  // Stop compressor
+    digitalWrite(coolpin, LOW);
+    curraction = "idle";
+  }
+
+  if (currtemp < targettemp - tolerancestart) {  //Start heater
+    digitalWrite(heatpin, HIGH);
+    curraction = "Heating";
+  }
+
+  if (currtemp > targettemp + tolerancestart) {  // Start compressor
+    digitalWrite(coolpin, HIGH);
+    curraction = "Cooling";
+  }
+
+
+  if (digitalRead(heatpin) == HIGH && digitalRead(coolpin) == HIGH) { // This should never happen, panic
+    panic("Both relays active");
+  }
+}
+
+
+
+
+
+
+
 
 
