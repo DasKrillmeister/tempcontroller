@@ -63,8 +63,10 @@ void setup() {
 
 void loop() {
   static float currtemp = 9001;
-  static float targettemp = 14;
-
+  static float targettemp;
+  
+  targettemp = readeepromonce(targettemp);
+  
   initTempReading();
 
   drawloop(currtemp, targettemp);
@@ -170,18 +172,42 @@ float watchInputsFor(int x, float targettemp) {
     if (digitalRead(11) == HIGH) {
       targettemp = targettemp + 1;
       delay(200);
+      if (targettemp > 40) {
+        targettemp = 40;
+      }
+      writeeeprom(targettemp);
       return targettemp;
     }
     if (digitalRead(12) == HIGH) {
       targettemp = targettemp - 1;
       delay(200);
+      if (targettemp < -30) {
+        targettemp = -30;
+      }
+      writeeeprom(targettemp);
       return targettemp;
     }
   }
   return targettemp;
 }
 
+float readeepromonce(float currtarget) {
+  static boolean read = 0;
+  if (read > 0) {
+    return currtarget;
+  }
+  byte data;
+  data = EEPROM.read(0);
+  float retval;
+  retval = float(data);
+  read++;
+  return retval;
+}
 
-
+void writeeeprom(float floattemp) {
+  byte bytetemp;
+  bytetemp = byte(floattemp);
+  EEPROM.write(0, bytetemp);
+}
 
 
