@@ -1,22 +1,46 @@
-
 /*
 
+ 
+ Temp sensor datasheet:
+ http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
+ 
+ 
+ Arduino pinout:
+ 
+ Pin 2: Cooling relay
+ Pin 3: Heating
+ 
+ Pin 5: Display E - SCK
+ Pin 6: Display RS - CS
+ Pin 7: Display R/W - MOSI
+ 
+ Pin 10: Onewire temp sensor
+ 
+ */
 
-Temp sensor datasheet:
-http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
+#define MOSIpin 7
+#define CSpin 6
+#define SCKpin 5
 
-OneWire on pin 10
-*/
-
+#define coolpin 2
+#define heatpin 3
 
 #include <OneWire.h>
+#include <U8glib.h>
+
+
+U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin, 8);
 
 OneWire onewire(10); // 4.7K pullup on pin
+
 
 int i;
 byte sensAddr[8];
 
 void setup() {
+  pinMode(coolpin, OUTPUT);
+  pinMode(heatpin, OUTPUT);
+
   Serial.begin(9600);
 
   // Find sensor and select
@@ -26,27 +50,39 @@ void setup() {
 
 
 void loop() {
-  float currtemp;
+  static float currtemp = 9001;
+  static float targettemp = 9001;
 
   initTempReading();
+
+  drawloop(currtemp, targettemp);
+  
 
   delay(1000); // Temp reading takes 750ms to finish, should probably do something useful here
 
   currtemp = readTemp();
   
+
+
   Serial.println(" ");  
   Serial.print("Current temperature: ");
   Serial.print(currtemp);
   Serial.print("C");
 
+
+
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void panic(String x) {
   Serial.println(" ");
   Serial.println("Something went horribly wrong, halting program. Reason: ");
   Serial.print(x);
-  while (1) {}
+  while (1) {
+  }
 }
 
 // Sends command to initialize a reading
@@ -87,9 +123,42 @@ float readTemp() {
 
   float currtemp;
   currtemp = tempraw * 0.0625;
-  
-  if (isNegative) { currtemp = currtemp *-1; }
-  
+
+  if (isNegative) { 
+    currtemp = currtemp *-1; 
+  }
+
   return currtemp;
 }
+
+
+void drawloop(float currtemp, float targettemp) {
+  u8g.firstPage();  
+  do {
+    draw(currtemp, targettemp);
+  } while( u8g.nextPage() );
+}
+  
+
+// All draw commands go in here
+void draw(float currtemp, float targettemp) {
+  int strwidth[2];
+
+  u8g.setFont(u8g_font_helvR08);
+  
+  u8g.setPrintPos(5, 10);
+  u8g.print("Current temp: ");
+  u8g.print(currtemp);
+  u8g.print("C");
+  
+  u8g.setPrintPos(5, 20);  
+  u8g.print("Target temp: ");
+  u8g.print(targettemp);
+  u8g.print("C");
+}
+
+
+
+
+
 
