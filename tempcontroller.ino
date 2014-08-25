@@ -1,14 +1,18 @@
+
 /*
  
- todo:
- ethernet?
- heat/cooling regulation
  
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
+
+ Ethercard lib:
+ http://jeelabs.net/pub/docs/ethercard/
  
  
  Arduino pinout:
+ 
+ Pin 4: Switch connected to ground
+ Pin 9: Switch connected to ground
  
  Pin 2: Cooling relay
  Pin 3: Heating
@@ -17,10 +21,13 @@
  Pin 6: Display RS - CS
  Pin 7: Display R/W - MOSI
  
+ Pin 8: Ethercard CS
+ 
  Pin 10: Onewire temp sensor
  
- Pin 11: Switch connected to ground
- Pin 12: Switch connected to ground
+ Pin 11: Ethercard SI
+ Pin 12: Ethercard SO
+ Pin 13: Ethercard SCK
  
  */
 
@@ -31,14 +38,31 @@
 #define coolpin 2
 #define heatpin 3
 
+#define switchpin1 4
+#define switchpin2 9
+
 #include <OneWire.h>
 #include <U8glib.h>
 #include <EEPROM.h>
+#include <enc28j60.h>
+#include <EtherCard.h>
+#include <net.h>
 
 
-U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin, 8);
+// Display lib init
+U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 
+// Onewire init
 OneWire onewire(10); // 4.7K pullup on pin
+
+// Ethercard init
+uint8_t Ethernet::buffer[700];
+byte mymac[] = { 0x62,0x1F,0xCA,0x11,0xC5,0x96 };
+const static uint8_t ip[] = {172,30,1,50};
+const static uint8_t gw[] = {172,30,1,1};
+const static uint8_t dns[] = {172,30,1,1};
+
+
 
 
 int i;
@@ -49,14 +73,28 @@ void setup() {
   pinMode(coolpin, OUTPUT);
   pinMode(heatpin, OUTPUT);
 
-  pinMode(11, INPUT_PULLUP);
-  pinMode(12, INPUT_PULLUP);
+  pinMode(switchpin1, INPUT_PULLUP);
+  pinMode(switchpin2, INPUT_PULLUP);
 
   Serial.begin(9600);
 
   // Find sensor and select
   onewire.search(sensAddr);
   onewire.select(sensAddr);
+  
+  if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) {
+    panic("Eth fail");
+  }
+/*
+  // TEST
+  char payload[] = "Hello world";
+  uint8_t nSourcePort = 3434;
+  uint8_t nDestinationPort = 1343;
+  uint8_t ipDestinationAddress[4];
+  ether.parseIp(ipDestinationAddress, "172.30.1.100");
+  
+  ether.sendUdp(payload, sizeof(payload), nSourcePort, ipDestinationAddress, nDestinationPort);
+  */
 }
 
 
@@ -173,7 +211,7 @@ float watchInputsFor(int x, float targettemp) {
   unsigned long starttime = millis();
 
   while (starttime + x > millis()) {
-    if (digitalRead(11) == HIGH) {
+    if (digitalRead(switchpin1) == HIGH) {
       targettemp = targettemp + 1;
       delay(150);
       if (targettemp > 40) {
@@ -182,7 +220,7 @@ float watchInputsFor(int x, float targettemp) {
       writeeeprom(targettemp);
       return targettemp;
     }
-    if (digitalRead(12) == HIGH) {
+    if (digitalRead(switchpin2) == HIGH) {
       targettemp = targettemp - 1;
       delay(150);
       if (targettemp < -30) {
