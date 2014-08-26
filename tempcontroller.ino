@@ -5,9 +5,6 @@
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
 
- Ethercard lib:
- http://jeelabs.net/pub/docs/ethercard/
- 
  
  Arduino pinout:
  
@@ -44,9 +41,6 @@
 #include <OneWire.h>
 #include <U8glib.h>
 #include <EEPROM.h>
-#include <enc28j60.h>
-#include <EtherCard.h>
-#include <net.h>
 
 
 // Display lib init
@@ -54,16 +48,6 @@ U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 
 // Onewire init
 OneWire onewire(10); // 4.7K pullup on pin
-
-// Ethercard init
-uint8_t Ethernet::buffer[700];
-byte mymac[] = { 0x62,0x1F,0xCA,0x11,0xC5,0x96 };
-const static uint8_t ip[] = {172,30,1,50};
-const static uint8_t gw[] = {172,30,1,1};
-const static uint8_t dns[] = {172,30,1,1};
-
-
-
 
 int i;
 byte sensAddr[8];
@@ -79,22 +63,9 @@ void setup() {
   Serial.begin(9600);
 
   // Find sensor and select
+  
   onewire.search(sensAddr);
   onewire.select(sensAddr);
-  
-  if (ether.begin(sizeof Ethernet::buffer, mymac) == 0) {
-    panic("Eth fail");
-  }
-/*
-  // TEST
-  char payload[] = "Hello world";
-  uint8_t nSourcePort = 3434;
-  uint8_t nDestinationPort = 1343;
-  uint8_t ipDestinationAddress[4];
-  ether.parseIp(ipDestinationAddress, "172.30.1.100");
-  
-  ether.sendUdp(payload, sizeof(payload), nSourcePort, ipDestinationAddress, nDestinationPort);
-  */
 }
 
 
@@ -112,7 +83,7 @@ void loop() {
   currtemp = readTemp();
 
   regulateRelays(currtemp, targettemp);
-
+  
 }
 
 
@@ -158,9 +129,11 @@ float readTemp() {
     onewireIncData[i] = onewire.read();
   }  
 
+
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
     panic("CRC Mismatch");
   }
+
 
   byte tempbyte[2];
   tempbyte[0] = onewireIncData[1];  // Having the least significant bit first confuses and enrages me
