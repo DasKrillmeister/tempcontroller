@@ -1,4 +1,3 @@
-
 /*
  
  
@@ -41,7 +40,10 @@
 #include <OneWire.h>
 #include <U8glib.h>
 #include <EEPROM.h>
+#include <UIPEthernet.h>
 
+// Network init
+EthernetUDP udp;
 
 // Display lib init
 U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
@@ -60,12 +62,18 @@ void setup() {
   pinMode(switchpin1, INPUT_PULLUP);
   pinMode(switchpin2, INPUT_PULLUP);
 
-  Serial.begin(9600);
+//  Serial.begin(9600);
 
   // Find sensor and select
   
   onewire.search(sensAddr);
   onewire.select(sensAddr);
+  
+  byte mac[6] = {0xB0, 0x0B, 0x50, 0x32, 0xFA, 0xA3};
+  Ethernet.begin(mac,IPAddress(172,30,1,50));
+  udp.begin(5555);
+  
+  
 }
 
 
@@ -83,6 +91,15 @@ void loop() {
   currtemp = readTemp();
 
   regulateRelays(currtemp, targettemp);
+  
+  
+  // Test ethernet
+  
+  udp.beginPacket(IPAddress(172,30,1,100),1343); // ARP Resolve
+  udp.write("Hello");
+  udp.endPacket();
+  
+  
   
 }
 
