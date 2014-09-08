@@ -7,7 +7,7 @@
  
  Arduino pinout:
  
- Pin 4: Switch connected to ground
+ Pin 22: Switch connected to ground
  Pin 9: Switch connected to ground
  
  Pin 2: Cooling relay
@@ -17,13 +17,13 @@
  Pin 6: Display RS - CS
  Pin 7: Display R/W - MOSI
  
- Pin 8: Ethercard CS
+ Pin 10: Ethercard CS
  
- Pin 10: Onewire temp sensor
+ Pin 26: Onewire temp sensor
  
- Pin 11: Ethercard SI
- Pin 12: Ethercard SO
- Pin 13: Ethercard SCK
+ Pin 50: Ethercard SI
+ Pin 51: Ethercard SO
+ Pin 52: Ethercard SCK
  
  */
 
@@ -34,8 +34,9 @@
 #define coolpin 2
 #define heatpin 3
 
-#define switchpin1 4
+#define switchpin1 22
 #define switchpin2 9
+
 
 #include <OneWire.h>
 #include <U8glib.h>
@@ -49,7 +50,7 @@ EthernetUDP udp;
 U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 
 // Onewire init
-OneWire onewire(10); // 4.7K pullup on pin
+OneWire onewire(26); // 4.7K pullup on pin
 
 int i;
 byte sensAddr[8];
@@ -86,7 +87,7 @@ void loop() {
 
   drawloop(currtemp, targettemp);
 
-  targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
+  targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms, also attempts an ARP resolve
 
   currtemp = readTemp();
 
@@ -94,8 +95,7 @@ void loop() {
   
   
   // Test ethernet
-  
-  udp.beginPacket(IPAddress(172,30,1,100),1343); // ARP Resolve
+  udp.beginPacket(IPAddress(172,30,1,100),1393);
   udp.write("Hello");
   udp.endPacket();
   
@@ -123,8 +123,8 @@ void panic(String x) {
   } 
   while( u8g.nextPage() );
   
-  while (1) {
-  }
+//  while (1) {
+//  }
 }
 
 // Sends command to initialize a reading
@@ -272,7 +272,6 @@ void regulateRelays(float currtemp, float targettemp) {
   if (digitalRead(heatpin) == HIGH) { curraction = "Heating"; }  
   if (digitalRead(coolpin) == LOW && digitalRead(heatpin) == LOW) { curraction = "Idle"; }
 }
-
 
 
 
