@@ -1,5 +1,6 @@
 /*
  
+ Master arduino, communicates with the ethernet slave over serial.
  
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
@@ -20,6 +21,11 @@
  
  Pin 10: Onewire temp sensor
  
+ 
+ TODO: Serial com to slave
+ Send status packets
+ Listen for target temp changes from ethslave.
+ Adjust temperature readings against calibrated thermometer
  
  */
 
@@ -49,7 +55,8 @@ U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 OneWire onewire(10); // 4.7K pullup on pin
 
 int i;
-byte sensAddr[8];
+byte sensAddr1[8];
+byte sensAddr2[8];
 String curraction = "Idle";
 
 void setup() {
@@ -59,12 +66,13 @@ void setup() {
   pinMode(switchpin1, INPUT_PULLUP);
   pinMode(switchpin2, INPUT_PULLUP);
 
-  Serial.begin(9600); // U8Glib does NOT work if Serial isn't called
+  Serial.begin(115200); // U8Glib does NOT work if Serial isn't called
 
   // Find sensor and select
 
-  onewire.search(sensAddr);
-  onewire.select(sensAddr);
+  onewire.reset_search();
+  onewire.search(sensAddr1);
+  onewire.search(sensAddr2);
 
 }
 
@@ -73,17 +81,19 @@ void loop() {
   static float targettemp;
   targettemp = readeepromonce(targettemp);
 
-  static float currtemp = targettemp;
+  static float currtemp1 = targettemp;
+  static float currtemp2 = targettemp;
 
   initTempReading();
 
-  drawloop(currtemp, targettemp);
+  drawloop(currtemp1, currtemp2, targettemp);
 
   targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
 
-  currtemp = readTemp();
+  currtemp1 = readTemp(sensAddr1);
+  currtemp2 = readTemp(sensAddr2);
 
-  regulateRelays(currtemp, targettemp);
+  regulateRelays(currtemp1, targettemp);
 
 }
 
@@ -114,16 +124,20 @@ void panic(String x) {
 // Sends command to initialize a reading
 void initTempReading() {
   onewire.reset();
-  onewire.select(sensAddr);
+  onewire.select(sensAddr1);
+  onewire.write(0x44); // init temp reading
+  
+  onewire.reset();
+  onewire.select(sensAddr2);
   onewire.write(0x44); // init temp reading
 }
 
 
 // Reads the sensor scratchpad and returns temperature in celsius.
-float readTemp() {
+float readTemp(byte addr[8]) {
   byte onewireIncData[8];
   onewire.reset();
-  onewire.select(sensAddr);
+  onewire.select(addr);
   onewire.write(0xBE); //command to read memory
 
   for (i=0; i<9; i++) {
@@ -132,7 +146,7 @@ float readTemp() {
 
 
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
-    panic("CRC Mismatch");
+//    panic("CRC Mismatch");
   }
 
 
@@ -150,32 +164,36 @@ float readTemp() {
 }
 
 
-void drawloop(float currtemp, float targettemp) {
+void drawloop(float currtemp1, float currtemp2, float targettemp) {
   u8g.firstPage();  
   do {
-    draw(currtemp, targettemp);
+    draw(currtemp1, currtemp2, targettemp);
   } 
   while( u8g.nextPage() ); 
 }
 
 
 // All draw commands go in here
-void draw(float currtemp, float targettemp) {
-  //  int strwidth[2];
+void draw(float currtemp1, float currtemp2, float targettemp) {
 
   u8g.setFont(u8g_font_helvR08);
 
   u8g.setPrintPos(5, 10);
-  u8g.print("Current temp: ");
-  u8g.print(currtemp);
+  u8g.print("Current temp 1: ");
+  u8g.print(currtemp1);
+  u8g.print("C");
+  
+  u8g.setPrintPos(5, 20);
+  u8g.print("Current temp 2: ");
+  u8g.print(currtemp2);
   u8g.print("C");
 
-  u8g.setPrintPos(5, 20);  
+  u8g.setPrintPos(5, 30);  
   u8g.print("Target temp: ");
   u8g.print(targettemp);
   u8g.print("C");
 
-  u8g.setPrintPos(5, 30);
+  u8g.setPrintPos(5, 40);
   u8g.print("Current action: ");
   u8g.print(curraction);
 
