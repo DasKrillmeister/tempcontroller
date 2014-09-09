@@ -3,11 +3,11 @@
  
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
-
+ 
  
  Arduino pinout:
  
- Pin 22: Switch connected to ground
+ Pin 11: Switch connected to ground
  Pin 9: Switch connected to ground
  
  Pin 2: Cooling relay
@@ -17,13 +17,9 @@
  Pin 6: Display RS - CS
  Pin 7: Display R/W - MOSI
  
- Pin 10: Ethercard CS
  
- Pin 26: Onewire temp sensor
+ Pin 10: Onewire temp sensor
  
- Pin 50: Ethercard SI
- Pin 51: Ethercard SO
- Pin 52: Ethercard SCK
  
  */
 
@@ -34,7 +30,7 @@
 #define coolpin 2
 #define heatpin 3
 
-#define switchpin1 22
+#define switchpin1 11
 #define switchpin2 9
 
 
@@ -50,7 +46,7 @@
 U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 
 // Onewire init
-OneWire onewire(26); // 4.7K pullup on pin
+OneWire onewire(10); // 4.7K pullup on pin
 
 int i;
 byte sensAddr[8];
@@ -63,18 +59,20 @@ void setup() {
   pinMode(switchpin1, INPUT_PULLUP);
   pinMode(switchpin2, INPUT_PULLUP);
 
+  Serial.begin(9600); // U8Glib does NOT work if Serial isn't called
 
   // Find sensor and select
-  
+
   onewire.search(sensAddr);
   onewire.select(sensAddr);
-  
+
 }
 
 
 void loop() {
   static float targettemp;
   targettemp = readeepromonce(targettemp);
+
   static float currtemp = targettemp;
 
   initTempReading();
@@ -86,7 +84,7 @@ void loop() {
   currtemp = readTemp();
 
   regulateRelays(currtemp, targettemp);
-    
+
 }
 
 
@@ -98,7 +96,7 @@ void panic(String x) {
   // Turn off both relays
   digitalWrite(coolpin, LOW);
   digitalWrite(heatpin, LOW);
-  
+
   u8g.firstPage();  
   do {
     u8g.setFont(u8g_font_helvR08);
@@ -108,7 +106,7 @@ void panic(String x) {
     u8g.print(x);    
   } 
   while( u8g.nextPage() ); 
-  
+
   while (1) {
   }
 }
@@ -163,7 +161,7 @@ void drawloop(float currtemp, float targettemp) {
 
 // All draw commands go in here
 void draw(float currtemp, float targettemp) {
-  int strwidth[2];
+  //  int strwidth[2];
 
   u8g.setFont(u8g_font_helvR08);
 
@@ -176,11 +174,11 @@ void draw(float currtemp, float targettemp) {
   u8g.print("Target temp: ");
   u8g.print(targettemp);
   u8g.print("C");
-  
+
   u8g.setPrintPos(5, 30);
   u8g.print("Current action: ");
   u8g.print(curraction);
-  
+
 }
 
 
@@ -254,11 +252,19 @@ void regulateRelays(float currtemp, float targettemp) {
   if (digitalRead(heatpin) == HIGH && digitalRead(coolpin) == HIGH) { // This should never happen, panic
     panic("Both relays active");
   }
-  
-  if (digitalRead(coolpin) == HIGH) { curraction = "Cooling"; }
-  if (digitalRead(heatpin) == HIGH) { curraction = "Heating"; }  
-  if (digitalRead(coolpin) == LOW && digitalRead(heatpin) == LOW) { curraction = "Idle"; }
+
+  if (digitalRead(coolpin) == HIGH) { 
+    curraction = "Cooling"; 
+  }
+  if (digitalRead(heatpin) == HIGH) { 
+    curraction = "Heating"; 
+  }  
+  if (digitalRead(coolpin) == LOW && digitalRead(heatpin) == LOW) { 
+    curraction = "Idle"; 
+  }
 }
+
+
 
 
 
