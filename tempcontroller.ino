@@ -41,10 +41,10 @@
 #include <OneWire.h>
 #include <U8glib.h>
 #include <EEPROM.h>
-#include <UIPEthernet.h>
 
-// Network init
-EthernetUDP udp;
+
+
+
 
 // Display lib init
 U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
@@ -63,17 +63,11 @@ void setup() {
   pinMode(switchpin1, INPUT_PULLUP);
   pinMode(switchpin2, INPUT_PULLUP);
 
-//  Serial.begin(9600);
 
   // Find sensor and select
   
   onewire.search(sensAddr);
   onewire.select(sensAddr);
-  
-  byte mac[6] = {0xB0, 0x0B, 0x50, 0x32, 0xFA, 0xA3};
-  Ethernet.begin(mac,IPAddress(172,30,1,50));
-  udp.begin(5555);
-  
   
 }
 
@@ -87,20 +81,12 @@ void loop() {
 
   drawloop(currtemp, targettemp);
 
-  targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms, also attempts an ARP resolve
+  targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
 
   currtemp = readTemp();
 
   regulateRelays(currtemp, targettemp);
-  
-  
-  // Test ethernet
-  udp.beginPacket(IPAddress(172,30,1,100),1393);
-  udp.write("Hello");
-  udp.endPacket();
-  
-  
-  
+    
 }
 
 
@@ -121,10 +107,10 @@ void panic(String x) {
     u8g.setPrintPos(5, 25);
     u8g.print(x);    
   } 
-  while( u8g.nextPage() );
+  while( u8g.nextPage() ); 
   
-//  while (1) {
-//  }
+  while (1) {
+  }
 }
 
 // Sends command to initialize a reading
@@ -171,7 +157,7 @@ void drawloop(float currtemp, float targettemp) {
   do {
     draw(currtemp, targettemp);
   } 
-  while( u8g.nextPage() );
+  while( u8g.nextPage() ); 
 }
 
 
@@ -194,6 +180,7 @@ void draw(float currtemp, float targettemp) {
   u8g.setPrintPos(5, 30);
   u8g.print("Current action: ");
   u8g.print(curraction);
+  
 }
 
 
@@ -272,11 +259,6 @@ void regulateRelays(float currtemp, float targettemp) {
   if (digitalRead(heatpin) == HIGH) { curraction = "Heating"; }  
   if (digitalRead(coolpin) == LOW && digitalRead(heatpin) == LOW) { curraction = "Idle"; }
 }
-
-
-
-
-
 
 
 
