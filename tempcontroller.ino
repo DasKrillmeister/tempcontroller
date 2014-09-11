@@ -2,6 +2,16 @@
  
  Master arduino, communicates with the ethernet slave over serial.
  
+ Handles a connected ST7920 display - two OneWire temperature sensors and interfaces to a relay board controlling the compressor/heater. 
+ Two switches connected to control target temperature.
+ Sends status updates and is capable of recieving a new target temperature over serial.
+ 
+ 
+ Serial packet structure
+ Status from master to slave: s[temp1 as ascii 00.00],[temp2 as ascii 00.00],[targettemp as ascii 00.00],[Current action as byte - 0 = idle - 1 = cooling - 2 = heating]e
+ new temp slave -> master: t[ascii 00.00]e
+ 
+ 
  Temp sensor datasheet:
  http://datasheets.maximintegrated.com/en/ds/DS18B20.pdf
  
@@ -12,7 +22,7 @@
  Pin 9: Switch connected to ground
  
  Pin 2: Cooling relay
- Pin 3: Heating
+ Pin 3: Heating relay
  
  Pin 5: Display E - SCK
  Pin 6: Display RS - CS
@@ -23,9 +33,8 @@
  
  
  TODO: Serial com to slave
- Send status packets
- Listen for target temp changes from ethslave.
- Adjust temperature readings against calibrated thermometer
+ control reset pin on slave and monitor if it goes unresponsive.
+
  
  */
 
@@ -97,11 +106,14 @@ void loop() {
   currtemp2 = readTemp(sensAddr2) + sensAddr2Adjustment;
 
   regulateRelays(currtemp1, targettemp);
+  
+  sendStatus(currtemp1, currtemp2, targettemp);
+  targettemp = readSerial(targettemp);
 
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Called in case of critical error, stops program and shuts down relays
 void panic(String x) {
@@ -182,23 +194,38 @@ void draw(float currtemp1, float currtemp2, float targettemp) {
 
   u8g.setFont(u8g_font_profont22);
   
-  u8g.setPrintPos(15, 20);
+  u8g.setPrintPos(10, 20);
   u8g.print("Krillbrau");
+  
+  u8g.drawPixel(102,6);
+  u8g.drawPixel(97,6);
   
   u8g.setFont(u8g_font_profont12);
   
   u8g.setPrintPos(5, 32);
-  u8g.print("Chamber temp: ");
+  if (currtemp2 >= 0) {
+    u8g.print("Chamber temp: ");
+  } else {
+    u8g.print("Chamber temp:");
+  }
   u8g.print(currtemp1);
   u8g.print("C");
   
   u8g.setPrintPos(5, 42);
-  u8g.print("Wort temp:    ");
+  if (currtemp2 >= 0) {
+    u8g.print("Wort temp:    ");
+  } else { 
+    u8g.print("Wort temp:   ");
+  }
   u8g.print(currtemp2);
   u8g.print("C");
 
   u8g.setPrintPos(5, 52);  
-  u8g.print("Target temp:  ");
+  if (targettemp >= 0) {
+    u8g.print("Target temp:  ");
+  } else {
+    u8g.print("Target temp: ");
+  }
   u8g.print(targettemp);
   u8g.print("C");
 
@@ -248,10 +275,17 @@ float readeepromonce(float currtarget) {
   return retval;
 }
 
-void writeeeprom(float floattemp) {
-  char chartemp;
-  chartemp = char(floattemp);
-  EEPROM.write(0, chartemp);
+void writeeeprom(float floatTemp) {
+  char charTemp;
+  charTemp = char(floatTemp);
+  char oldData;
+  oldData = EEPROM.read(0);
+  
+  if (oldData == charTemp) { // Do nothing if new temp matches stored temp
+    return; 
+  }
+  
+  EEPROM.write(0, charTemp);
 }
 
 
@@ -291,7 +325,53 @@ void regulateRelays(float currtemp, float targettemp) {
   }
 }
 
+void sendStatus(float temp1, float temp2, float targettemp) {
+  Serial.print("s");
+  Serial.print(temp1);
+  Serial.print(",");
+  Serial.print(temp2);
+  Serial.print(",");
+  Serial.print(targettemp);
+  Serial.print(",");
+  
+  if (curraction == "Idle") { Serial.print("0"); }
+  if (curraction == "Cooling") { Serial.print("1"); }
+  if (curraction == "Heating") { Serial.print("2"); }
+  Serial.print("e");
+}
 
+float readSerial(float origTemp) {
 
+  if (Serial.available() > 40) { // Serial buffer filling up, this should never happen. Empty it.
+    while (Serial.available()) {
+      Serial.read();
+    }
+  }
+      
 
+  if (Serial.available() > 0) {
+    if (Serial.peek() == 116) {   // Ascii, 116 = t
+
+      Serial.read();   // Throw away start char
+      float newTemp = Serial.parseFloat();
+      Serial.read();   // Throw away end char
+
+      if (newTemp < -30) {newTemp = -30; }
+      if (newTemp > 40) {newTemp = 40; }
+      
+      if (newTemp == origTemp) {
+        return origTemp;
+      }
+      writeeeprom(newTemp);
+      return newTemp;
+    }
+  } else {
+    
+    while (Serial.available()) { // There is serial data available but it does not start with a known char, empty buffer.
+      Serial.read();
+    }
+    
+    return origTemp;
+  }
+}
 
