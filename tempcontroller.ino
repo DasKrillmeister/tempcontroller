@@ -149,7 +149,7 @@ float readTemp(byte addr[8]) {
 
 
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
-//    panic("CRC Mismatch");
+    panic("CRC Mismatch");
   }
 
 
@@ -180,27 +180,32 @@ void drawloop(float currtemp1, float currtemp2, float targettemp) {
 // All draw commands go in here
 void draw(float currtemp1, float currtemp2, float targettemp) {
 
-  u8g.setFont(u8g_font_helvR08);
-
-  u8g.setPrintPos(5, 10);
-  u8g.print("Current temp 1: ");
+  u8g.setFont(u8g_font_profont22);
+  
+  u8g.setPrintPos(15, 20);
+  u8g.print("Krillbrau");
+  
+  u8g.setFont(u8g_font_profont12);
+  
+  u8g.setPrintPos(5, 32);
+  u8g.print("Chamber temp: ");
   u8g.print(currtemp1);
   u8g.print("C");
   
-  u8g.setPrintPos(5, 20);
-  u8g.print("Current temp 2: ");
+  u8g.setPrintPos(5, 42);
+  u8g.print("Wort temp:    ");
   u8g.print(currtemp2);
   u8g.print("C");
 
-  u8g.setPrintPos(5, 30);  
-  u8g.print("Target temp: ");
+  u8g.setPrintPos(5, 52);  
+  u8g.print("Target temp:  ");
   u8g.print(targettemp);
   u8g.print("C");
 
-  u8g.setPrintPos(5, 40);
-  u8g.print("Current action: ");
+  u8g.setPrintPos(5, 62);
+  u8g.print("Status: ");
   u8g.print(curraction);
-
+  
 }
 
 
