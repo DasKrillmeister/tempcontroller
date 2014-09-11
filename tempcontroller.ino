@@ -57,6 +57,9 @@ OneWire onewire(10); // 4.7K pullup on pin
 int i;
 byte sensAddr1[8];
 byte sensAddr2[8];
+
+const float sensAddr2Adjustment = 1;
+
 String curraction = "Idle";
 
 void setup() {
@@ -91,7 +94,7 @@ void loop() {
   targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
 
   currtemp1 = readTemp(sensAddr1);
-  currtemp2 = readTemp(sensAddr2);
+  currtemp2 = readTemp(sensAddr2) + sensAddr2Adjustment;
 
   regulateRelays(currtemp1, targettemp);
 
@@ -159,6 +162,7 @@ float readTemp(byte addr[8]) {
 
   float currtemp;
   currtemp = tempraw * 0.0625;
+  
 
   return currtemp;
 }
