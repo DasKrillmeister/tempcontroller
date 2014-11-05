@@ -18,6 +18,9 @@
  
  Arduino pinout:
  
+ 0: RX Slave
+ 1: TX Slave
+ 
  Pin 11: Switch connected to ground
  Pin 9: Switch connected to ground
  
@@ -32,7 +35,7 @@
  Pin 10: Onewire temp sensor
  
  
- TODO: Serial com to slave
+ TODO:
  control reset pin on slave and monitor if it goes unresponsive.
 
  
