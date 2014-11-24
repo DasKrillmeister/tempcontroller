@@ -7,6 +7,7 @@
  Serial packet structure
  Status from master to slave: s[temp1 as ascii 00.00],[temp2 as ascii 00.00],[targettemp as ascii 00.00],[Current action as byte - 0 = idle - 1 = cooling - 2 = heating]e
  new temp slave -> master: t[ascii 00.00]e
+ pc to slave new temp -> t[ascii 00.00]e
  
  
  Pinout:
@@ -24,25 +25,51 @@
  */
 
 #include <UIPEthernet.h>
-EthernetClient tcp;
-IPAddress ownIP(172,30,1,50);
+EthernetClient client;
+//IPAddress ownIP(172,30,1,50);
 IPAddress server(172,30,1,100);
+//IPAddress dns1(172,30,1,5);
+//IPAddress gateway(172,30,1,1);
+//IPAddress netmask(255,255,240,0);
+
+int dport = 5000;
+float incSerialData[4];
+
+
 
 
 void setup() {
   Serial.begin(115200);
-  uint8_t mac[6] = {0xAD,0xAD,0xFA,0x23,0x75,0x22};
-  Ethernet.begin(mac, ownIP);
+  ////////////////////////////
+  Serial.println("Begin");
+  /////////////////////////
+//  uint8_t mac[6] = {0xAD,0xAD,0xFA,0x23,0x75,0x22};
+  uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
+  //Ethernet.begin(mac, ownIP, dns1, gateway, netmask);
+  Ethernet.begin(mac);
   delay(500);
+  ///////////////////////
+  Serial.print("localIP: ");
+  Serial.println(Ethernet.localIP());
+  Serial.print("subnetMask: ");
+  Serial.println(Ethernet.subnetMask());
+  Serial.print("gatewayIP: ");
+  Serial.println(Ethernet.gatewayIP());
+  Serial.print("dnsServerIP: ");
+  Serial.println(Ethernet.dnsServerIP());
+  ////////////////////////
 }
 
 void loop() {
-  static float incSerialData[4];
-  float newTargetTemp = 100;
+  float newTargetTemp;
   
-  readSerial(incSerialData);
+  readSerial();
   
-  // Ethernet read loop goes here
+  tcpConnect();    // If connection already established does nothing. Else connects to server.
+  
+  tcpSend();
+  
+  newTargetTemp = tcpRead();
   
   if (newTargetTemp < 100) {
     sendSerial(newTargetTemp);
@@ -53,7 +80,7 @@ void loop() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void readSerial(float incSerialData[4]) {
+void readSerial() {
 
   if (Serial.available() > 40) { // Serial buffer filling up, clear it.
     while (Serial.available()) {
@@ -86,5 +113,38 @@ void sendSerial(float newTargetTemp) {
   Serial.print("e");
   delay(100);
 }
+
+void tcpConnect() {
+  if (client.connected()) {
+    return;
+  }
+  
+  client.connect(server, dport);
+} 
+
+void tcpSend() {
+  client.print("s");
+  client.print(incSerialData[0]);
+  client.print(",");
+  client.print(incSerialData[1]);
+  client.print(",");
+  client.print(incSerialData[2]);
+  client.print(",");
+  client.print(incSerialData[3]);
+  client.print("e");
+}
+
+
+float tcpRead() {
+  if (client.read()) {
+    float temp = client.parseFloat();
+    client.flush();
+    return temp;
+  }
+  return 100;
+}
+    
+  
+
 
 
