@@ -41,7 +41,7 @@ float incSerialData[4];
 void setup() {
   Serial.begin(115200);
   ////////////////////////////
-  Serial.println("Begin");
+//  Serial.println("Begin");
   /////////////////////////
 //  uint8_t mac[6] = {0xAD,0xAD,0xFA,0x23,0x75,0x22};
   uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
@@ -49,7 +49,7 @@ void setup() {
   Ethernet.begin(mac);
   delay(500);
   ///////////////////////
-  Serial.print("localIP: ");
+/*  Serial.print("localIP: ");
   Serial.println(Ethernet.localIP());
   Serial.print("subnetMask: ");
   Serial.println(Ethernet.subnetMask());
@@ -57,7 +57,7 @@ void setup() {
   Serial.println(Ethernet.gatewayIP());
   Serial.print("dnsServerIP: ");
   Serial.println(Ethernet.dnsServerIP());
-  ////////////////////////
+  *////////////////////////
 }
 
 void loop() {

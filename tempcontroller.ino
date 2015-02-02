@@ -169,7 +169,7 @@ float readTemp(byte addr[8]) {
 
 
   byte tempbyte[2];
-  tempbyte[0] = onewireIncData[1];  // Having the least significant bit first confuses and enrages me
+  tempbyte[0] = onewireIncData[1];
   tempbyte[1] = onewireIncData[0];
 
   int tempraw;
@@ -243,7 +243,7 @@ float watchInputsFor(int x, float targettemp) {
   unsigned long starttime = millis();
 
   while (starttime + x > millis()) {
-    if (digitalRead(switchpin1) == HIGH) {
+    if (digitalRead(switchpin1) == LOW) {
       targettemp = targettemp + 1;
       delay(150);
       if (targettemp > 40) {
@@ -252,7 +252,8 @@ float watchInputsFor(int x, float targettemp) {
       writeeeprom(targettemp);
       return targettemp;
     }
-    if (digitalRead(switchpin2) == HIGH) {
+
+    if (digitalRead(switchpin2) == LOW) {
       targettemp = targettemp - 1;
       delay(150);
       if (targettemp < -30) {
