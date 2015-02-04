@@ -20,17 +20,11 @@
  12: Ethernet SO
  13: Ethernet SCK
  
- TODO: Ethernet!
- 
  */
 
 #include <UIPEthernet.h>
 EthernetClient client;
-//IPAddress ownIP(172,30,1,50);
-IPAddress server(172,30,1,100);
-//IPAddress dns1(172,30,1,5);
-//IPAddress gateway(172,30,1,1);
-//IPAddress netmask(255,255,240,0);
+IPAddress server(172,30,1,50);
 
 int dport = 5000;
 float incSerialData[4];
@@ -40,28 +34,16 @@ float incSerialData[4];
 
 void setup() {
   Serial.begin(115200);
-  ////////////////////////////
-//  Serial.println("Begin");
-  /////////////////////////
-//  uint8_t mac[6] = {0xAD,0xAD,0xFA,0x23,0x75,0x22};
+
   uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
-  //Ethernet.begin(mac, ownIP, dns1, gateway, netmask);
+
   Ethernet.begin(mac);
   delay(500);
-  ///////////////////////
-/*  Serial.print("localIP: ");
-  Serial.println(Ethernet.localIP());
-  Serial.print("subnetMask: ");
-  Serial.println(Ethernet.subnetMask());
-  Serial.print("gatewayIP: ");
-  Serial.println(Ethernet.gatewayIP());
-  Serial.print("dnsServerIP: ");
-  Serial.println(Ethernet.dnsServerIP());
-  *////////////////////////
+  
 }
 
 void loop() {
-  float newTargetTemp;
+  float newTargetTemp = 1000;
   
   readSerial();
   
@@ -123,25 +105,33 @@ void tcpConnect() {
 } 
 
 void tcpSend() {
-  client.print("s");
-  client.print(incSerialData[0]);
-  client.print(",");
-  client.print(incSerialData[1]);
-  client.print(",");
-  client.print(incSerialData[2]);
-  client.print(",");
-  client.print(incSerialData[3]);
-  client.print("e");
+  static unsigned long lastSent = 0;
+  
+  if (lastSent + 1000 < millis()) {
+    client.print("s");
+    client.print(incSerialData[0]);
+    client.print(",");
+    client.print(incSerialData[1]);
+    client.print(",");
+    client.print(incSerialData[2]);
+    client.print(",");
+    client.print(incSerialData[3]);
+    client.print("e");
+    
+    lastSent = millis();
+  }
+  return;
 }
 
 
 float tcpRead() {
-  if (client.read()) {
+  int incData = client.read();
+  if (incData == 116) {
     float temp = client.parseFloat();
     client.flush();
     return temp;
   }
-  return 100;
+  return 1000;
 }
     
   
