@@ -21,9 +21,6 @@
  0: RX Slave
  1: TX Slave
  
- Pin 11: Switch connected to ground
- Pin 9: Switch connected to ground
- 
  Pin 2: Cooling relay
  Pin 3: Heating relay
  
@@ -31,13 +28,10 @@
  Pin 6: Display RS - CS
  Pin 7: Display R/W - MOSI
  
+ Pin 11: Switch connected to ground
+ Pin 9: Switch connected to ground
  
  Pin 10: Onewire temp sensor
- 
- 
- TODO:
- control reset pin on slave and monitor if it goes unresponsive.
-
  
  */
 
@@ -109,7 +103,7 @@ void loop() {
   currtemp2 = readTemp(sensAddr2) + sensAddr2Adjustment;
 
   regulateRelays(currtemp1, targettemp);
-  
+
   sendStatus(currtemp1, currtemp2, targettemp);
   targettemp = readSerial(targettemp);
 
@@ -144,7 +138,7 @@ void initTempReading() {
   onewire.reset();
   onewire.select(sensAddr1);
   onewire.write(0x44); // init temp reading
-  
+
   onewire.reset();
   onewire.select(sensAddr2);
   onewire.write(0x44); // init temp reading
@@ -160,7 +154,7 @@ float readTemp(byte addr[8]) {
 
   for (i=0; i<9; i++) {
     onewireIncData[i] = onewire.read();
-  }  
+  }
 
 
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
@@ -177,7 +171,7 @@ float readTemp(byte addr[8]) {
 
   float currtemp;
   currtemp = tempraw * 0.0625;
-  
+
 
   return currtemp;
 }
@@ -196,28 +190,30 @@ void drawloop(float currtemp1, float currtemp2, float targettemp) {
 void draw(float currtemp1, float currtemp2, float targettemp) {
 
   u8g.setFont(u8g_font_profont22);
-  
+
   u8g.setPrintPos(10, 20);
   u8g.print("Krillbrau");
-  
+
   u8g.drawPixel(102,6);
   u8g.drawPixel(97,6);
-  
+
   u8g.setFont(u8g_font_profont12);
-  
+
   u8g.setPrintPos(5, 32);
   if (currtemp2 >= 0) {
     u8g.print("Chamber temp: ");
-  } else {
+  } 
+  else {
     u8g.print("Chamber temp:");
   }
   u8g.print(currtemp1);
   u8g.print("C");
-  
+
   u8g.setPrintPos(5, 42);
   if (currtemp2 >= 0) {
     u8g.print("Wort temp:    ");
-  } else { 
+  } 
+  else { 
     u8g.print("Wort temp:   ");
   }
   u8g.print(currtemp2);
@@ -226,7 +222,8 @@ void draw(float currtemp1, float currtemp2, float targettemp) {
   u8g.setPrintPos(5, 52);  
   if (targettemp >= 0) {
     u8g.print("Target temp:  ");
-  } else {
+  } 
+  else {
     u8g.print("Target temp: ");
   }
   u8g.print(targettemp);
@@ -235,7 +232,7 @@ void draw(float currtemp1, float currtemp2, float targettemp) {
   u8g.setPrintPos(5, 62);
   u8g.print("Status: ");
   u8g.print(curraction);
-  
+
 }
 
 
@@ -284,11 +281,11 @@ void writeeeprom(float floatTemp) {
   charTemp = char(floatTemp);
   char oldData;
   oldData = EEPROM.read(0);
-  
+
   if (oldData == charTemp) { // Do nothing if new temp matches stored temp
     return; 
   }
-  
+
   EEPROM.write(0, charTemp);
 }
 
@@ -337,10 +334,16 @@ void sendStatus(float temp1, float temp2, float targettemp) {
   Serial.print(",");
   Serial.print(targettemp);
   Serial.print(",");
-  
-  if (curraction == "Idle") { Serial.print("0"); }
-  if (curraction == "Cooling") { Serial.print("1"); }
-  if (curraction == "Heating") { Serial.print("2"); }
+
+  if (curraction == "Idle") { 
+    Serial.print("0"); 
+  }
+  if (curraction == "Cooling") { 
+    Serial.print("1"); 
+  }
+  if (curraction == "Heating") { 
+    Serial.print("2"); 
+  }
   Serial.print("e");
 }
 
@@ -351,7 +354,7 @@ float readSerial(float origTemp) {
       Serial.read();
     }
   }
-      
+
 
   if (Serial.available() > 0) {
     if (Serial.peek() == 116) {   // Ascii, 116 = t
@@ -360,22 +363,28 @@ float readSerial(float origTemp) {
       float newTemp = Serial.parseFloat();
       Serial.read();   // Throw away end char
 
-      if (newTemp < -30) {newTemp = -30; }
-      if (newTemp > 40) {newTemp = 40; }
-      
+      if (newTemp < -30) {
+        newTemp = -30; 
+      }
+      if (newTemp > 40) {
+        newTemp = 40; 
+      }
+
       if (newTemp == origTemp) {
         return origTemp;
       }
       writeeeprom(newTemp);
       return newTemp;
     }
-  } else {
-    
+  } 
+  else {
+
     while (Serial.available()) { // There is serial data available but it does not start with a known char, empty buffer.
       Serial.read();
     }
-    
+
     return origTemp;
   }
 }
+
 

@@ -9,7 +9,6 @@
  new temp slave -> master: t[ascii 00.00]e
  pc to slave new temp -> t[ascii 00.00]e
  
- 
  Pinout:
  
  0: RX Master
@@ -35,29 +34,30 @@ float incSerialData[4];
 void setup() {
   Serial.begin(115200);
 
-  uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
+  uint8_t mac[6] = {
+    0x00,0x01,0x02,0x03,0x04,0x05  };
 
   Ethernet.begin(mac);
   delay(500);
-  
+
 }
 
 void loop() {
   float newTargetTemp = 1000;
-  
+
   readSerial();
-  
+
   tcpConnect();    // If connection already established does nothing. Else connects to server.
-  
+
   tcpSend();
-  
+
   newTargetTemp = tcpRead();
-  
+
   if (newTargetTemp < 100) {
     sendSerial(newTargetTemp);
   }
-  
-  
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,13 +100,13 @@ void tcpConnect() {
   if (client.connected()) {
     return;
   }
-  
+
   client.connect(server, dport);
 } 
 
 void tcpSend() {
   static unsigned long lastSent = 0;
-  
+
   if (lastSent + 1000 < millis()) {
     client.print("s");
     client.print(incSerialData[0]);
@@ -117,7 +117,7 @@ void tcpSend() {
     client.print(",");
     client.print(incSerialData[3]);
     client.print("e");
-    
+
     lastSent = millis();
   }
   return;
@@ -133,8 +133,9 @@ float tcpRead() {
   }
   return 1000;
 }
-    
-  
+
+
+
 
 
 
