@@ -291,8 +291,8 @@ void writeeeprom(float floatTemp) {
 
 
 void regulateRelays(float currtemp, float targettemp) {
-  float tolerancestop = -0.3;
-  float tolerancestart = 1.5;
+  float tolerancestop = -1.0;
+  float tolerancestart = 2.5;
 
   if (currtemp > targettemp + tolerancestop) { // Stop heater
     digitalWrite(heatpin, LOW);
