@@ -241,23 +241,29 @@ float watchInputsFor(int x, float targettemp) {
 
   while (starttime + x > millis()) {
     if (digitalRead(switchpin1) == LOW) {
-      targettemp = targettemp + 1;
-      delay(150);
-      if (targettemp > 40) {
-        targettemp = 40;
+      delay(100);
+      if (digitalRead(switchpin1) == LOW) {
+        targettemp = targettemp + 1;
+        if (targettemp > 40) {
+          targettemp = 40;
+        }
+        writeeeprom(targettemp);
+        delay(100);
+        return targettemp;
       }
-      writeeeprom(targettemp);
-      return targettemp;
     }
 
     if (digitalRead(switchpin2) == LOW) {
+      delay(100);
       targettemp = targettemp - 1;
-      delay(150);
-      if (targettemp < -30) {
-        targettemp = -30;
+      if (digitalRead(switchpin2) == LOW) {
+        if (targettemp < -30) {
+          targettemp = -30;
+        }
+        writeeeprom(targettemp);
+        delay(100);
+        return targettemp;
       }
-      writeeeprom(targettemp);
-      return targettemp;
     }
   }
   return targettemp;
