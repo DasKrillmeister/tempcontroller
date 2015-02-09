@@ -60,7 +60,6 @@ U8GLIB_ST7920_128X64_1X u8g(SCKpin, MOSIpin, CSpin);
 // Onewire init
 OneWire onewire(10); // 4.7K pullup on pin
 
-int i;
 byte sensAddr1[8];
 byte sensAddr2[8];
 
@@ -89,24 +88,24 @@ void setup() {
 void loop() {
   static float targettemp;
   targettemp = readeepromonce(targettemp);
-
+  
   static float currtemp1 = targettemp;
   static float currtemp2 = targettemp;
-
+  
   initTempReading();
-
+  
   drawloop(currtemp1, currtemp2, targettemp);
-
+  
   targettemp = watchInputsFor(750, targettemp);  // temp reading takes 750 ms
-
+  
   currtemp1 = readTemp(sensAddr1);
   currtemp2 = readTemp(sensAddr2) + sensAddr2Adjustment;
-
-  regulateRelays(currtemp1, targettemp);
-
+  
+  regulateRelays(currtemp1, targettemp, currtemp2);
+  
   sendStatus(currtemp1, currtemp2, targettemp);
+  
   targettemp = readSerial(targettemp);
-
 }
 
 
@@ -125,7 +124,7 @@ void panic(String x) {
     u8g.setPrintPos(5, 10);
     u8g.print("PANIC, Reason:");
     u8g.setPrintPos(5, 25);
-    u8g.print(x);    
+    u8g.print(x);
   } 
   while( u8g.nextPage() ); 
 
@@ -152,16 +151,26 @@ float readTemp(byte addr[8]) {
   onewire.select(addr);
   onewire.write(0xBE); //command to read memory
 
-  for (i=0; i<9; i++) {
+  for (int i=0; i<9; i++) {
     onewireIncData[i] = onewire.read();
   }
-
-
+  
+  
+  // Fail if CRC mismatches enough times
+  static int failcount;
   if (OneWire::crc8(onewireIncData,8) != onewireIncData[8]) {
-    panic("CRC Mismatch");
+    failcount = failcount + 10;
+    if (failcount > 200) {
+      panic("CRC Mismatch");
+    }
   }
+  failcount--;
+  if (failcount < 0) {
+    failcount = 0;
+  }
+  
 
-
+  
   byte tempbyte[2];
   tempbyte[0] = onewireIncData[1];
   tempbyte[1] = onewireIncData[0];
@@ -170,7 +179,7 @@ float readTemp(byte addr[8]) {
   tempraw = tempbyte[1] | tempbyte[0] << 8;
 
   float currtemp;
-  currtemp = tempraw * 0.0625;
+  currtemp = tempraw * 0.0625; // see sensor datasheet for multiplier
 
 
   return currtemp;
@@ -240,7 +249,7 @@ float watchInputsFor(int x, float targettemp) {
   unsigned long starttime = millis();
 
   while (starttime + x > millis()) {
-    if (digitalRead(switchpin1) == LOW) {
+    if (digitalRead(switchpin1) == LOW) { // Debounce
       delay(100);
       if (digitalRead(switchpin1) == LOW) {
         targettemp = targettemp + 1;
@@ -253,10 +262,10 @@ float watchInputsFor(int x, float targettemp) {
       }
     }
 
-    if (digitalRead(switchpin2) == LOW) {
+    if (digitalRead(switchpin2) == LOW) { // Debounce
       delay(100);
-      targettemp = targettemp - 1;
       if (digitalRead(switchpin2) == LOW) {
+        targettemp = targettemp - 1;
         if (targettemp < -30) {
           targettemp = -30;
         }
@@ -296,9 +305,9 @@ void writeeeprom(float floatTemp) {
 }
 
 
-void regulateRelays(float currtemp, float targettemp) {
-  float tolerancestop = -1.0;
-  float tolerancestart = 2.5;
+void regulateRelays(float currtemp, float targettemp, float worttemp) {
+  float tolerancestop = -0.3;
+  float tolerancestart = 1.5;
 
   if (currtemp > targettemp + tolerancestop) { // Stop heater
     digitalWrite(heatpin, LOW);
@@ -309,11 +318,17 @@ void regulateRelays(float currtemp, float targettemp) {
   }
 
   if (currtemp < targettemp - tolerancestart) {  //Start heater
-    digitalWrite(heatpin, HIGH);
+    if (targettemp < worttemp) {
+    } else {
+      digitalWrite(heatpin, HIGH);
+    }
   }
 
   if (currtemp > targettemp + tolerancestart) {  // Start compressor
-    digitalWrite(coolpin, HIGH);
+    if (worttemp < targettemp) {
+    } else {
+      digitalWrite(coolpin, HIGH);
+    }
   }
 
 
