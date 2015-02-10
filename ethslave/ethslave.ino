@@ -100,7 +100,7 @@ void tcpConnect() {
   if (client.connected()) {
     return;
   }
-
+  delay(10000);
   client.connect(server, dport);
 } 
 
