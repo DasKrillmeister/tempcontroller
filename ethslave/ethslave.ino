@@ -64,7 +64,7 @@ void loop() {
 
 void readSerial() {
 
-  if (Serial.available() > 40) { // Serial buffer filling up, clear it.
+  if (Serial.available() > 20) { // Serial buffer filling up, clear it.
     while (Serial.available()) {
       Serial.read();
     }
@@ -107,7 +107,7 @@ void tcpConnect() {
 void tcpSend() {
   static unsigned long lastSent = 0;
 
-  if (lastSent + 1000 < millis()) {
+  if (lastSent + 750 < millis()) {
     client.print("s");
     client.print(incSerialData[0]);
     client.print(",");
