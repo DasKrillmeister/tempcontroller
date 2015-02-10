@@ -21,9 +21,11 @@
  
  */
 
+#include <avr/io.h>
+#include <avr/wdt.h>
 #include <UIPEthernet.h>
 EthernetClient client;
-IPAddress server(172,30,1,50);
+PROGMEM IPAddress server(172,30,1,50);
 
 int dport = 5000;
 float incSerialData[4];
@@ -34,11 +36,12 @@ float incSerialData[4];
 void setup() {
   Serial.begin(115200);
 
-  uint8_t mac[6] = {
-    0x00,0x01,0x02,0x03,0x04,0x05  };
+  PROGMEM uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
 
   Ethernet.begin(mac);
   delay(500);
+  
+  wdt_enable(WDTO_8S);
 
 }
 
@@ -57,7 +60,7 @@ void loop() {
     sendSerial(newTargetTemp);
   }
 
-
+  wdt_reset();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,7 +103,7 @@ void tcpConnect() {
   if (client.connected()) {
     return;
   }
-  delay(10000);
+  delay(5000);
   client.connect(server, dport);
 } 
 
