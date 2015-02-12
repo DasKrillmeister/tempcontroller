@@ -40,16 +40,15 @@ void setup() {
   PROGMEM uint8_t mac[6] = {0x00,0x01,0x02,0x03,0x04,0x05};
 
   Ethernet.begin(mac);
-  delay(500);
-  
+  delay(5000);
+
+  tcpConnect(); 
 }
 
 void loop() {
   float newTargetTemp = 1000;
 
   readSerial();
-
-  tcpConnect();    // If connection already established does nothing. Else connects to server.
 
   tcpSend();
 
@@ -65,10 +64,11 @@ void loop() {
 
 void readSerial() {
 
-  if (Serial.available() > 20) { // Serial buffer filling up, clear it.
+  if (Serial.available() > 30) { // Serial buffer filling up, clear it.
     while (Serial.available()) {
       Serial.read();
     }
+    return;
   }
 
 
@@ -80,14 +80,14 @@ void readSerial() {
       incSerialData[2] = Serial.parseFloat();  // Target temp
       incSerialData[3] = Serial.parseFloat();  // Current action
       Serial.read();   // Throw away end char
+      return;
     }
   }
-  else {
 
-    while (Serial.available()) { // There is serial data available but it does not start with a known char, empty buffer.
-      Serial.read();
-    }
+  while (Serial.available()) { // There is serial data available but it does not start with a known char, empty buffer.
+    Serial.read();
   }
+
 }
 
 void sendSerial(float newTargetTemp) {
@@ -121,7 +121,6 @@ void tcpSend() {
 
     lastSent = millis();
   }
-  return;
 }
 
 
