@@ -6,6 +6,7 @@
  
  Serial packet structure
  Status from master to slave: s[temp1 as ascii 00.00],[temp2 as ascii 00.00],[targettemp as ascii 00.00],[Current action as byte - 0 = idle - 1 = cooling - 2 = heating]e
+ Status from slave to PC: s[temp1 as ascii 00.00],[temp2 as ascii 00.00],[targettemp as ascii 00.00],[Current action as byte - 0 = idle - 1 = cooling - 2 = heating]e
  new temp slave -> master: t[ascii 00.00]e
  pc to slave new temp -> t[ascii 00.00]e
  
@@ -25,7 +26,7 @@
 #include <avr/wdt.h>
 #include <UIPEthernet.h>
 EthernetClient client;
-PROGMEM IPAddress server(172,30,1,50);
+IPAddress server(172,30,1,50);
 
 int dport = 5000;
 float incSerialData[4];
@@ -41,8 +42,6 @@ void setup() {
   Ethernet.begin(mac);
   delay(500);
   
-  wdt_enable(WDTO_8S);
-
 }
 
 void loop() {
@@ -59,8 +58,7 @@ void loop() {
   if (newTargetTemp < 100) {
     sendSerial(newTargetTemp);
   }
-
-  wdt_reset();
+  
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
